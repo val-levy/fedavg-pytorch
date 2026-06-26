@@ -1,9 +1,8 @@
 import torch
-from torch import nn
 from torch.utils.data import DataLoader, random_split
 
 
-from models import TwoNN, CNN
+from models import TwoNN
 from server import Server
 from client import Client
 from util import get_dataset
@@ -63,11 +62,11 @@ def train():
     #training rounds
     print("Training...\n\n")
     for i in range(NUM_ROUNDS):
-        print(f'Training Round: {i}\n')
+        print(f'Training Round: {i}')
         server.train_round()
-        print(f'Round complete.\n')
-
+        print(f'Round complete.')    
     save_weights(server.global_model)
+    print("Training Complete!")
 
     return
 

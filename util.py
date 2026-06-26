@@ -1,8 +1,4 @@
 #pull data
-
-from torch.utils.data import random_split
-
-from torch import DataLoader
 from torchvision import datasets, transforms
 
 transform = transforms.Compose([
