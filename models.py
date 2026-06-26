@@ -17,7 +17,5 @@ class TwoNN(nn.Module):
         return self.net(x)
     
 
-#convolutional neural network
-class CNN(nn.Module):
-    super().__init__()
-    #todo
+
+ #todo CNN
