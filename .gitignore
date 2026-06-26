@@ -1,0 +1,50 @@
+data/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# PyTorch checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Environment variables
+.env
+
+# Misc
+*.swp
