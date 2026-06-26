@@ -19,13 +19,9 @@ DEVICE = (
 
 NUM_CLIENTS = 100
 TOTAL_IMAGES = 60_000
-NUM_ROUNDS = 10
-#set batch size
+NUM_ROUNDS = 50
 TRAIN_BATCHSIZE = 64
-TEST_BATCHSIZE = 1_000
-#set datasets
 train_dataset = get_dataset(train=True)
-test_dataset = get_dataset(train=False)
 
 
 def save_weights(model, dir="./trained-weights"):
