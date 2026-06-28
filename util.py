@@ -18,8 +18,3 @@ def get_dataset(path='./data', train=False):
         download=True,
         transform=transform
         )
-
-
-# Uncomment out the following lines and run this script to download datasets
-# get_dataset()
-# get_dataset(train=True)

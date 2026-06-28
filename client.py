@@ -33,9 +33,9 @@ class Client:
                 else "cpu"
         )
 
-    def train(self, global_model):
+    def train(self, global_model, epochs=1):
         """
-        Train the current local dataset on a copy of the global model 
+        Train the current local dataset on a copy of the global model
 
         Returns updated weights, length of data trained
 
@@ -55,21 +55,21 @@ class Client:
         optimizer = torch.optim.SGD(local_model.parameters(), lr=lr)
 
         total_loss = 0
-        num_batches=0
+        num_batches = 0
 
-        # train
-        for images, labels in self.train_loader:
-            images = images.to(self.device)
-            labels = labels.to(self.device)
+        for _ in range(epochs):
+            for images, labels in self.train_loader:
+                images = images.to(self.device)
+                labels = labels.to(self.device)
 
-            optimizer.zero_grad(set_to_none=True)
-            outputs = local_model(images)
-            loss = loss_function(outputs, labels)
-            total_loss+=loss.item()
-            num_batches+=1
+                optimizer.zero_grad(set_to_none=True)
+                outputs = local_model(images)
+                loss = loss_function(outputs, labels)
+                total_loss += loss.item()
+                num_batches += 1
 
-            loss.backward()
-            optimizer.step()
+                loss.backward()
+                optimizer.step()
         
         return ClientUpdate(
             state_dict=local_model.state_dict(), 

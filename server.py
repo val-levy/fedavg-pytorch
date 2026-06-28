@@ -23,6 +23,7 @@ class Server:
                 else "cpu"
         )
 
+    # C - fraction of clients chosen
     def select_clients(self, fraction=None):
         """
         Randomly choose clients for this current round
@@ -37,13 +38,13 @@ class Server:
         return random.sample(self.clients, k)
 
 
-    def train_round(self):
+    def train_round(self, epochs=1):
         selected_clients = self.select_clients()
 
         client_updates = []
 
         for client in selected_clients:
-            update = client.train(self.global_model)
+            update = client.train(self.global_model, epochs=epochs)
             client_updates.append(update)
         
         self.aggregate(client_updates)
