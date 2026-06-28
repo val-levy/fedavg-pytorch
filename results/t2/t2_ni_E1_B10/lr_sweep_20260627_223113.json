@@ -1,0 +1,36 @@
+{
+  "target": 0.97,
+  "lrs": [
+    0.05,
+    0.1,
+    0.2,
+    0.3
+  ],
+  "results": {
+    "E=1 K=100 B=10 L=? C=0.1 non-IID": {
+      "best_lr": 0.1,
+      "sweep": [
+        {
+          "lr": 0.05,
+          "target_round": null,
+          "final_acc": 0.9471
+        },
+        {
+          "lr": 0.1,
+          "target_round": 825,
+          "final_acc": 0.971
+        },
+        {
+          "lr": 0.2,
+          "target_round": null,
+          "final_acc": 0.098
+        },
+        {
+          "lr": 0.3,
+          "target_round": null,
+          "final_acc": 0.098
+        }
+      ]
+    }
+  }
+}

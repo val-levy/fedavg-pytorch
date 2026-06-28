@@ -32,14 +32,14 @@ class Server:
         """
 
         if fraction is None:
-            fraction = 0.01
+            fraction = 0.1
 
         k = max(1, int(fraction * len(self.clients))) # if the clients selected is less than 1, round up to 1
         return random.sample(self.clients, k)
 
 
-    def train_round(self, epochs=1):
-        selected_clients = self.select_clients()
+    def train_round(self, epochs=1, fraction=0.1):
+        selected_clients = self.select_clients(fraction=fraction)
 
         client_updates = []
 
