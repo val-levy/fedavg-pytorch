@@ -2,7 +2,7 @@
 
 A from-scratch PyTorch implementation of the Federated Averaging (FedAvg) algorithm introduced in *Communication-Efficient Learning of Deep Networks from Decentralized Data*.
 
-## Features
+## Project
 
 - Simulated client-server federated learning on MNIST
 - Local client training with SGD
@@ -11,31 +11,6 @@ A from-scratch PyTorch implementation of the Federated Averaging (FedAvg) algori
 - Timestamped model checkpointing
 - Separate training and evaluation scripts
 
-## Project Structure
-
-```
-.
-├── train.py 
-├── evaluate.py
-├── client.py
-├── server.py
-├── models.py
-├── util.py
-├── trained-weights/  # saved model checkpoints (created on first run)
-└── README.md
-```
-
-## Usage
-
-**Train** — downloads MNIST automatically, runs FedAvg for N rounds, and saves weights to `trained-weights/`:
-```bash
-python train.py
-```
-
-**Evaluate** — loads the latest saved weights and prints test accuracy:
-```bash
-python evaluate.py
-```
 
 ## References
 
