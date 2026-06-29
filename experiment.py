@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from client import Client
 from evaluate import compute_accuracy
+from scripts.fig1 import compute_loss
 from models import TwoNN, CNN
 from server import Server
 from util import get_dataset, make_shards
@@ -44,7 +45,7 @@ def trial_label(config):
     return f"E={config['E']} K={config['K']} B={config['B']} L={config['L']} C={config['C']} {dist}"
 
 
-def run_trial(config, target=None, check_every=5, max_rounds=None, model_cls=TwoNN):
+def run_trial(config, target=None, check_every=5, max_rounds=None, model_cls=TwoNN, metric="acc", eval_loader=None):
     """Train one trial, evaluating at EVAL_ROUNDS (plus every `check_every` rounds).
 
     Stops early at the first evaluated round where test accuracy >= `target`.
@@ -67,20 +68,24 @@ def run_trial(config, target=None, check_every=5, max_rounds=None, model_cls=Two
 
     server = Server(model_cls().to(DEVICE), clients=clients, device=DEVICE)
 
-    # round 0: accuracy before any training
-    checkpoints = {0: compute_accuracy(server.global_model)}
+    def evaluate_model():
+        if metric == "loss":
+            return compute_loss(server.global_model, eval_loader, DEVICE)
+        return compute_accuracy(server.global_model)
+
+    checkpoints = {0: evaluate_model()}
     target_round = None
 
     for r in range(1, max_rounds + 1):
         server.train_round(epochs=config["E"], fraction=config["C"])
 
         if r in EVAL_SET or r % check_every == 0 or r == max_rounds:
-            acc = compute_accuracy(server.global_model)
-            checkpoints[r] = acc
-            print(f"  Round {r}/{max_rounds}  acc={acc:.4f}", end="\r")
-            if target is not None and acc >= target:
+            value = evaluate_model()
+            checkpoints[r] = value
+            print(f"  Round {r}/{max_rounds}  {metric}={value:.4f}", end="\r")
+            if target is not None and metric == "acc" and value >= target:
                 target_round = r
-                print(f"\n  Reached target {target:.0%} at round {r} (acc={acc:.4f})")
+                print(f"\n  Reached target {target:.0%} at round {r} ({metric}={value:.4f})")
                 break
         else:
             print(f"  Round {r}/{max_rounds}", end="\r")
@@ -145,6 +150,7 @@ def main():
     parser.add_argument("--max-rounds", type=int, default=MAX_ROUNDS, help="Cap on communication rounds per trial")
     parser.add_argument("--lr-sweep", metavar="L1,L2,...", help="Comma-separated learning rates to sweep per trial; reports the best L")
     parser.add_argument("--model", choices=sorted(MODELS), default="twonn", help="Model architecture")
+    parser.add_argument("--metric", choices=("acc", "loss"), default="acc", help="Track test accuracy or training loss")
     parser.add_argument("--bench", type=int, default=0, metavar="N", help="Time N rounds of the first --trial, print sec/round, and exit")
     parser.add_argument("--output", default="results", help="Directory to save plot and JSON data")
     args = parser.parse_args()
@@ -154,6 +160,11 @@ def main():
 
     target = args.target if args.target > 0 else None
     model_cls = MODELS[args.model]
+
+    eval_loader = None
+    if args.metric == "loss":
+        target = None
+        eval_loader = DataLoader(train_dataset, batch_size=1000, shuffle=False)
 
     # --- benchmark mode: measure wall-time per round on this machine ---
     if args.bench:
@@ -206,11 +217,11 @@ def main():
     for config in configs:
         label = trial_label(config)
         print(f"\nRunning: {label}")
-        checkpoints, target_round = run_trial(config, target=target, check_every=args.check_every, max_rounds=args.max_rounds, model_cls=model_cls)
+        checkpoints, target_round = run_trial(config, target=target, check_every=args.check_every, max_rounds=args.max_rounds, model_cls=model_cls, metric=args.metric, eval_loader=eval_loader)
         results[label] = checkpoints
         target_rounds[label] = target_round
         last_round = max(checkpoints)
-        print(f"  Accuracy at round {last_round}: {checkpoints[last_round]:.4f}")
+        print(f"  {args.metric} at round {last_round}: {checkpoints[last_round]:.4f}")
 
     if target is not None:
         print(f"\nRounds to reach {target:.0%} target accuracy:")
@@ -233,8 +244,8 @@ def main():
         plt.plot(xs, ys, marker="o", label=label)
     plt.xscale("log")
     plt.xlabel("Communication Round (log scale)")
-    plt.ylabel("Test Accuracy")
-    plt.title("FedAvg: Accuracy vs. Communication Rounds")
+    plt.ylabel("Training loss" if args.metric == "loss" else "Test Accuracy")
+    plt.title("FedAvg: Training Loss vs. Communication Rounds" if args.metric == "loss" else "FedAvg: Accuracy vs. Communication Rounds")
     plt.xticks(EVAL_ROUNDS, labels=EVAL_ROUNDS, rotation=45)
     plt.legend()
     plt.grid(True, alpha=0.3, which="both")

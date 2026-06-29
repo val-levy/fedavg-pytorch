@@ -91,18 +91,24 @@ B_COLORS = {"10": "#D62728", "50": "#F0A030", "∞": "#1F77B4"}   # red / orange
 E_STYLES = {1: "-", 5: "--", 20: ":"}
 
 
-def fig_curves(rows, target, model_name, outpath, xmax=1000):
-    """Two-panel accuracy-vs-rounds figure (IID | non-IID), Figure-2 style."""
+def fig_curves(rows, target, model_name, outpath, xmax=200):
+    """Accuracy-vs-rounds figure, Figure-2 style. One panel per distribution
+    that actually has data, so an IID-only run renders as a single panel."""
     have = [r for r in rows if r["checkpoints"]]
     if not have:
         return None
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    dists = [d for d in ["IID", "non-IID"] if any(r["dist"] == d for r in have)]
+    fig, axes = plt.subplots(
+        1, len(dists), figsize=(7.0 * len(dists), 5.0), sharey=True, squeeze=False
+    )
+    axes = axes[0]
+
     accs = []
-    for ax, dist in zip(axes, ["IID", "non-IID"]):
+    for ax, dist in zip(axes, dists):
         sub = sorted([r for r in have if r["dist"] == dist], key=lambda r: (r["B"], r["E"]))
         for r in sub:
-            pts = sorted((int(k), v) for k, v in r["checkpoints"].items() if int(k) <= xmax)
+            pts = sorted((int(k), v) for k, v in r["checkpoints"].items() if 1 <= int(k) <= xmax)
             if not pts:
                 continue
             xs, ys = zip(*pts)
@@ -110,22 +116,30 @@ def fig_curves(rows, target, model_name, outpath, xmax=1000):
             ax.plot(xs, ys,
                     color=B_COLORS.get(r["B"], "#444"),
                     linestyle=E_STYLES.get(r["E"], "-"),
-                    lw=1.6,
+                    lw=2.0, marker="o", markersize=3.5,
+                    markerfacecolor="white", markeredgewidth=1.0,
                     label=f"B={r['B']} E={r['E']}")
-        ax.axhline(target, color="gray", lw=0.8)
-        ax.set_title(f"MNIST {model_name} {dist}")
-        ax.set_xlabel("Communication Rounds")
+        ax.axhline(target, color="#888", lw=1.0, ls="--", zorder=0)
+        ax.text(xmax, target, f"{target:.0%} target ", color="#888",
+                va="bottom", ha="right", fontsize=9)
+        ax.set_title(f"MNIST {model_name} — {dist}", fontsize=13)
+        ax.set_xlabel("Communication rounds")
         ax.set_xlim(0, xmax)
+        ax.margins(x=0)
         ax.grid(True, alpha=0.25)
-        # order legend by B then E to mirror the paper
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             order = sorted(range(len(labels)), key=lambda i: labels[i])
-            ax.legend([handles[i] for i in order], [labels[i] for i in order], fontsize=7, ncol=1)
-    axes[0].set_ylabel("Test Accuracy")
-    lo = max(0.90, (min(accs) if accs else target) - 0.005)
+            ax.legend([handles[i] for i in order], [labels[i] for i in order],
+                      fontsize=10, title="more local SGD →", loc="lower right", framealpha=0.9)
+
+    axes[0].set_ylabel("Test accuracy")
+    lo = max(0.90, (min(accs) if accs else target) - 0.01)
     axes[0].set_ylim(lo, 1.0)
-    fig.suptitle(f"FedAvg MNIST {model_name}: test accuracy vs. communication rounds")
+    fig.suptitle(f"FedAvg MNIST {model_name}: test accuracy vs. communication rounds",
+                 fontsize=14)
     fig.tight_layout()
     fig.savefig(outpath, dpi=150)
     plt.close(fig)
@@ -138,6 +152,7 @@ def main():
     ap.add_argument("--output", default="results/figures", help="output dir for figures")
     ap.add_argument("--target", type=float, default=0.97)
     ap.add_argument("--model-name", default="2NN", help="Model label for figure titles (e.g. CNN, 2NN)")
+    ap.add_argument("--xmax", type=int, default=200, help="Max communication round shown on accuracy-vs-rounds")
     args = ap.parse_args()
 
     rows = load(args.glob)
@@ -147,7 +162,7 @@ def main():
     os.makedirs(args.output, exist_ok=True)
 
     made = [fig_rounds_to_target(rows, args.target, os.path.join(args.output, "rounds_to_target.png"))]
-    p = fig_curves(rows, args.target, args.model_name, os.path.join(args.output, "accuracy_vs_rounds.png"))
+    p = fig_curves(rows, args.target, args.model_name, os.path.join(args.output, "accuracy_vs_rounds.png"), xmax=args.xmax)
     if p:
         made.append(p)
 
